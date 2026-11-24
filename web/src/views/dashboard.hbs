@@ -1,0 +1,26 @@
+<main class="contenedor">
+  <h1>Clasificador de botellas de plástico</h1>
+
+  <section class="panel">
+    <label for="camaras">Cámara:</label>
+    <select id="camaras"></select>
+    <span id="estadoIA" class="chip">IA: ...</span>
+  </section>
+
+  <section class="grid">
+    <div class="panel">
+      <video id="video" autoplay muted playsinline></video>
+      <div id="resultado" class="resultado">Esperando cámara...</div>
+    </div>
+
+    <div class="panel">
+      <h2>Resumen</h2>
+      <p>Total analizados: <strong id="total">0</strong></p>
+      <p>Botellas: <strong id="botellas">0</strong></p>
+      <p>No botellas: <strong id="noBotellas">0</strong></p>
+      <h2>Últimas detecciones</h2>
+      <ul id="historial" class="historial"></ul>
+    </div>
+  </section>
+</main>
+<script src="/js/camara.js"></script>
