@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import * as ctrl from '../controllers/clasificacion.controller.js';
+import { requiereSesionApi } from '../middleware/auth.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -10,6 +11,7 @@ const upload = multer({
 });
 
 const router = Router();
+router.use(requiereSesionApi);
 
 router.post('/clasificar', upload.single('imagen'), ctrl.clasificar);
 router.get('/historial', ctrl.historial);

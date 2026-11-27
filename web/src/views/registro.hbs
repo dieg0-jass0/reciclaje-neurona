@@ -1,0 +1,36 @@
+<main class="auth">
+  <form class="panel auth-form" method="post" action="/registro">
+    <h1>Crear cuenta</h1>
+    {{#if error}}<p class="alerta error">{{error}}</p>{{/if}}
+
+    <label for="numeroControl">Número de control</label>
+    <input id="numeroControl" name="numeroControl" value="{{valores.numeroControl}}" required minlength="6" maxlength="12" autocomplete="username">
+
+    <label for="nombreCompleto">Nombre completo</label>
+    <input id="nombreCompleto" name="nombreCompleto" value="{{valores.nombreCompleto}}" required autocomplete="name">
+
+    <label for="correo">Correo electrónico</label>
+    <input id="correo" name="correo" type="email" value="{{valores.correo}}" required autocomplete="email">
+
+    <label for="carrera">Carrera</label>
+    <input id="carrera" name="carrera" list="carreras" value="{{valores.carrera}}" required>
+    <datalist id="carreras">
+      <option value="Ingeniería en Sistemas Computacionales">
+      <option value="Ingeniería Informática">
+      <option value="Ingeniería Industrial">
+      <option value="Ingeniería en Gestión Empresarial">
+      <option value="Ingeniería Electromecánica">
+      <option value="Ingeniería Mecatrónica">
+      <option value="Ingeniería Civil">
+    </datalist>
+
+    <label for="password">Contraseña (mínimo 8 caracteres)</label>
+    <input id="password" name="password" type="password" required minlength="8" autocomplete="new-password">
+
+    <label for="password2">Repite la contraseña</label>
+    <input id="password2" name="password2" type="password" required minlength="8" autocomplete="new-password">
+
+    <button type="submit">Registrarme</button>
+    <p class="auth-pie">¿Ya tienes cuenta? <a href="/login">Inicia sesión</a></p>
+  </form>
+</main>
