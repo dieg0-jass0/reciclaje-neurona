@@ -1,16 +1,36 @@
-<main class="auth">
-  <form class="panel auth-form" method="post" action="/login">
-    <h1>Iniciar sesión</h1>
-    {{#if exito}}<p class="alerta ok">{{exito}}</p>{{/if}}
-    {{#if error}}<p class="alerta error">{{error}}</p>{{/if}}
+<main class="contenedor-auth">
+  <form class="tarjeta-auth" method="post" action="/login">
+    <div class="encabezado-auth">
+      <div class="logo-auth" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 2h4v3l1.5 2.5V20a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V7.5L10 5z"/><path d="M8.5 12h7"/>
+        </svg>
+      </div>
+      <h1>Iniciar sesión</h1>
+      <p>Escaneo de botellas para reciclaje</p>
+    </div>
 
-    <label for="numeroControl">Número de control</label>
-    <input id="numeroControl" name="numeroControl" value="{{valores.numeroControl}}" required autofocus autocomplete="username">
+    {{#if aviso}}<p class="mensaje info">{{aviso}}</p>{{/if}}
+    {{#if error}}<p class="mensaje error">{{error}}</p>{{/if}}
+    <div class="tipo-acceso" role="radiogroup" aria-label="Entrar como">
+      <input type="radio" id="tipoUsuario" name="tipo" value="usuario" {{#unless comoAdmin}}checked{{/unless}}>
+      <label for="tipoUsuario">Usuario</label>
+      <input type="radio" id="tipoAdmin" name="tipo" value="admin" {{#if comoAdmin}}checked{{/if}}>
+      <label for="tipoAdmin">Administrador</label>
+    </div>
+    <div class="campo">
+      <label for="numeroControl">Número de control</label>
+      <input id="numeroControl" name="numeroControl" value="{{numeroControl}}" autocomplete="username"
+             placeholder="Ej. 20210123" required autofocus>
+    </div>
 
-    <label for="password">Contraseña</label>
-    <input id="password" name="password" type="password" required autocomplete="current-password">
+    <div class="campo">
+      <label for="password">Contraseña</label>
+      <input id="password" name="password" type="password" autocomplete="current-password"
+             placeholder="Tu contraseña" required>
+    </div>
 
-    <button type="submit">Entrar</button>
-    <p class="auth-pie">¿No tienes cuenta? <a href="/registro">Regístrate</a></p>
+    <button type="submit" class="boton boton-auth">Entrar</button>
+    <p class="pie-auth">¿No tienes cuenta? <a href="/registro">Regístrate</a></p>
   </form>
 </main>
