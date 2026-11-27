@@ -22,7 +22,7 @@ export async function registrar(req, res) {
 
   const fallar = (error) => res.status(400).render('registro', { titulo: 'Crear cuenta', error, valores });
 
-  if (!RE_CONTROL.test(numeroControl)) return fallar('El número de control debe tener de 6 a 12 letras o números.');
+  if (!RE_CONTROL.test(numeroControl)) return fallar('El número de control debe tener de 6 a 8 letras o números.');
   if (nombreCompleto.split(' ').length < 2) return fallar('Escribe tu nombre completo (nombre y apellidos).');
   if (!RE_CORREO.test(correo)) return fallar('El correo no es válido.');
   if (!carrera) return fallar('Indica la carrera que estudias.');
@@ -35,9 +35,12 @@ export async function registrar(req, res) {
     res.redirect('/login?registrado=1');
   } catch (err) {
     if (err.code === 11000) {
-      const campo = err.keyPattern?.correo ? 'correo' : 'número de control';
-      return fallar(`Ya existe una cuenta con ese ${campo}.`);
-    }
+    const campo = err.keyPattern && err.keyPattern.correo
+        ? 'correo'
+        : 'número de control';
+
+    return fallar(`Ya existe una cuenta con ese ${campo}.`);
+}
     console.error(err);
     res.status(500).render('registro', { titulo: 'Crear cuenta', error: 'Error al crear la cuenta.', valores });
   }
