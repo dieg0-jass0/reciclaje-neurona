@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import Usuario from '../models/usuario.model.js';
 
-const RE_CONTROL = /^[A-Za-z0-9]{6,12}$/;
+const RE_CONTROL = /^[A-Za-z0-9]{6,8}$/;
 const RE_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function verLogin(req, res) {
