@@ -11,7 +11,18 @@
     <select id="camaras"></select>
     <button id="pausa" type="button" class="boton" aria-pressed="false">Pausar análisis</button>
   </div>
+
+  <div class="cuenta">
+    <span class="cuenta-nombre">{{usuario}}</span>
+    {{#if esAdmin}}<a href="/admin" class="cuenta-enlace">Administrador</a>{{/if}}
+    <form method="post" action="/logout">
+      <button type="submit" class="boton boton-quieto">Cerrar sesión</button>
+    </form>
+  </div>
 </header>
+
+<div id="avisoSesion" class="aviso-sesion" role="alert" hidden
+     data-inactividad-ms="{{inactividadMs}}"></div>
 
 <main class="estacion">
   <section class="visor" aria-label="Cámara en vivo">
@@ -55,6 +66,8 @@
       <div><dt><i class="muestra muestra-resto"></i>Otros objetos</dt><dd id="noBotellas">0</dd></div>
     </dl>
   </section>
-</main>
 
+  <p class="nota-sesion">La sesión se cierra tras {{textoInactividad}} sin actividad.</p>
+</main>
+<script src="/js/sesion.js"></script>
 <script src="/js/camara.js"></script>

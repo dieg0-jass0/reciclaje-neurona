@@ -15,7 +15,7 @@ export async function clasificar(req, res) {
   }
 
   try {
-    const registro = await Deteccion.guardar(resultado);
+    const registro = await Deteccion.guardar({ ...resultado, usuarioId: req.sesion.usuarioId });
     res.json(registro);
   } catch (err) {
     res.status(500).json({ error: 'No se pudo guardar en MongoDB', detalle: err.message });

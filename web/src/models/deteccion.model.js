@@ -5,6 +5,7 @@ const esquema = new mongoose.Schema(
     esBotella: { type: Boolean, required: true },
     confianza: { type: Number, required: true, min: 0, max: 1 },
     fecha: { type: Date, default: Date.now, index: true },
+    usuarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', index: true },
   },
   { versionKey: false }
 );
@@ -19,8 +20,8 @@ const aPlano = (doc) => ({
 });
 
 export default {
-  async guardar({ esBotella, confianza }) {
-    const doc = await Modelo.create({ esBotella, confianza });
+  async guardar({ esBotella, confianza, usuarioId }) {
+    const doc = await Modelo.create({ esBotella, confianza, usuarioId });
     return aPlano(doc);
   },
 
@@ -35,5 +36,14 @@ export default {
       Modelo.countDocuments({ esBotella: true }),
     ]);
     return { total, botellas, noBotellas: total - botellas };
+  },
+
+  // { usuarioId: { total, botellas } }
+  async conteoPorUsuario() {
+    const filas = await Modelo.aggregate([
+      { $match: { usuarioId: { $ne: null } } },
+      { $group: { _id: '$usuarioId', total: { $sum: 1 }, botellas: { $sum: { $cond: ['$esBotella', 1, 0] } } } },
+    ]);
+    return Object.fromEntries(filas.map((f) => [String(f._id), { total: f.total, botellas: f.botellas }]));
   },
 };
