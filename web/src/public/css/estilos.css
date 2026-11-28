@@ -293,6 +293,16 @@ select, .boton {
   100% { opacity: 0; transform: translateY(-10px); }
 }
 .marcador-detalle { margin-top: 8px; }
+.boton.boton-reporte {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 16px;
+  background: var(--tinta);
+  border-color: var(--tinta);
+  color: #fff;
+  text-decoration: none;
+}
+.boton.boton-reporte:hover { background: var(--tapon); border-color: var(--tapon); }
 .regla { margin-top: 12px; font-size: .875rem; max-width: 40ch; }
 
 .nota-sesion {

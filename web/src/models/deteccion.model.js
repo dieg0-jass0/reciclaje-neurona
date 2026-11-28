@@ -62,6 +62,16 @@ export default {
     return { botellas: fila?.botellas || 0, puntos: fila?.puntos || 0 };
   },
 
+  // Botellas por día de una persona: [{ dia: 'AAAA-MM-DD', botellas }] (solo días con botellas)
+  async porDia(usuarioId, desde, zona) {
+    if (!idValido(usuarioId)) return [];
+    const filas = await Modelo.aggregate([
+      { $match: { ...ENTREGA, usuarioId: new mongoose.Types.ObjectId(usuarioId), fecha: { $gte: desde } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$fecha', timezone: zona } }, botellas: { $sum: 1 } } },
+    ]);
+    return filas.map((f) => ({ dia: f._id, botellas: f.botellas }));
+  },
+
   // { usuarioId: { botellas, puntos } }
   async conteoPorUsuario() {
     const filas = await Modelo.aggregate([

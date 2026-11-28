@@ -18,6 +18,7 @@ Express  --Mongoose-->  MongoDB (modelo Mongoose "Deteccion")
 | `web/src/services/ia.service.js` | Único punto que habla con Flask (`IA_URL`) |
 | `web/src/services/conteo.service.js` | Decide cuándo una serie de frames es UNA botella nueva por persona (evita puntos repetidos) |
 | `web/src/models/deteccion.model.js` | Esquema + funciones `guardar`, `listar`, `resumen`; devuelve objetos planos con `id` |
+| `web/src/utils/reporte-pdf.js` | Reporte personal en PDF (pdfkit) con las fuentes de `web/src/assets/fuentes/` |
 | `web/src/views/` | Plantillas Handlebars (`layouts/main.hbs`, `dashboard.hbs`) |
 | `web/src/public/` | `css/estilos.css` y `js/camara.js` (JS sin framework, sin build) |
 | `ia-service/app.py` | Flask: `GET /health`, `POST /predict` |

@@ -68,6 +68,7 @@
               <th>Registro</th>
               <th class="num">Botellas</th>
               <th class="num">Puntos</th>
+              <th>Reporte</th>
               <th></th>
             </tr>
           </thead>
@@ -82,6 +83,7 @@
                 <td>{{registro}}</td>
                 <td class="num">{{botellas}}</td>
                 <td class="num">{{puntos}}</td>
+                <td><a class="dash-enlace" href="/admin/usuarios/{{id}}/reporte.pdf" download>Reporte PDF</a></td>
                 <td class="num">
                   {{#if soyYo}}
                     <span class="admin-tu">Tú</span>
@@ -94,7 +96,7 @@
                 </td>
               </tr>
             {{else}}
-              <tr><td colspan="9" class="admin-vacio">No hay usuarios que coincidan.</td></tr>
+              <tr><td colspan="10" class="admin-vacio">No hay usuarios que coincidan.</td></tr>
             {{/each}}
           </tbody>
         </table>

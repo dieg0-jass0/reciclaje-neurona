@@ -29,6 +29,8 @@ Límite: el modelo no distingue botellas individuales; retirar y volver a mostra
 | `GET /api/resumen` | `{ botellas, puntos, puntosPorBotella }` de la persona con sesión | 401 · 500 |
 | `GET /api/estado` (pública) | `{ web: "ok", ia: "ok"\|"caido", db: "ok"\|"caido" }` | — |
 | `GET /` | Dashboard HTML (requiere sesión) | redirige a `/login` |
+| `GET /reporte.pdf` | PDF con puntos, botellas, gráfica de 14 días y últimas 200 botellas de la persona con sesión (`utils/reporte-pdf.js`, pdfkit) | redirige a `/login` |
+| `GET /admin/usuarios/:id/reporte.pdf` | El mismo reporte de cualquier usuario (solo admin) | 403 · 404 |
 
 Formato de error: `{ error: "mensaje para el usuario", detalle?: "err.message" }`.
 

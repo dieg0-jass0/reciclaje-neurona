@@ -111,6 +111,12 @@ export default {
     return CARRERAS.map((nombre) => ({ nombre, total: mapa[nombre] || 0 }));
   },
 
+  async buscarPorId(id) {
+    if (!mongoose.isValidObjectId(id)) return null;
+    const doc = await Modelo.findById(id).lean();
+    return doc ? aPlano(doc) : null;
+  },
+
   async eliminar(id) {
     if (!mongoose.isValidObjectId(id)) return;
     await Modelo.deleteOne({ _id: id });
