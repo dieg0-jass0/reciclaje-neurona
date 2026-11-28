@@ -1,26 +1,60 @@
-<main class="contenedor">
-  <h1>Clasificador de botellas de plástico</h1>
+<header class="barra">
+  <h1 class="marca">Clasificador de botellas</h1>
 
-  <section class="panel">
-    <label for="camaras">Cámara:</label>
+  <ul class="servicios" aria-label="Estado de los servicios">
+    <li id="luzIA" class="luz" data-estado="cargando">IA</li>
+    <li id="luzDB" class="luz" data-estado="cargando">Base de datos</li>
+  </ul>
+
+  <div class="controles">
+    <label for="camaras">Cámara</label>
     <select id="camaras"></select>
-    <span id="estadoIA" class="chip">IA: ...</span>
+    <button id="pausa" type="button" class="boton" aria-pressed="false">Pausar análisis</button>
+  </div>
+</header>
+
+<main class="estacion">
+  <section class="visor" aria-label="Cámara en vivo">
+    <video id="video" autoplay muted playsinline></video>
+
+    <svg class="guia" viewBox="0 0 120 300" aria-hidden="true">
+      <defs>
+        <clipPath id="cuerpo">
+          <path d="M48 22H72V40C72 52 96 62 98 86V270C98 284 88 294 74 294H46C32 294 22 284 22 270V86C24 62 48 52 48 40Z"/>
+        </clipPath>
+      </defs>
+      <rect id="nivel" class="nivel" x="0" y="294" width="120" height="300" clip-path="url(#cuerpo)"/>
+      <path class="contorno" d="M48 22H72V40C72 52 96 62 98 86V270C98 284 88 294 74 294H46C32 294 22 284 22 270V86C24 62 48 52 48 40Z"/>
+      <rect class="tapa" x="44" y="4" width="32" height="18" rx="3"/>
+      <path class="costilla" d="M24 150H96M24 162H96M24 228H96"/>
+    </svg>
+
+    <p class="pista">Pon el objeto dentro de la silueta</p>
   </section>
 
-  <section class="grid">
-    <div class="panel">
-      <video id="video" autoplay muted playsinline></video>
-      <div id="resultado" class="resultado">Esperando cámara...</div>
-    </div>
+  <section id="veredicto" class="veredicto" data-tipo="espera" aria-live="polite">
+    <p id="titular" class="titular">Esperando cámara</p>
+    <p class="seguridad"><span id="porcentaje" class="cifra">—</span><span class="unidad">de seguridad</span></p>
+    <p id="destino" class="destino">Permite el acceso a la cámara para empezar.</p>
+  </section>
 
-    <div class="panel">
-      <h2>Resumen</h2>
-      <p>Total analizados: <strong id="total">0</strong></p>
-      <p>Botellas: <strong id="botellas">0</strong></p>
-      <p>No botellas: <strong id="noBotellas">0</strong></p>
-      <h2>Últimas detecciones</h2>
-      <ul id="historial" class="historial"></ul>
+  <section class="cinta" aria-labelledby="tituloCinta">
+    <h2 id="tituloCinta">Últimas detecciones</h2>
+    <ol id="historial" class="fichas"></ol>
+    <p id="cintaVacia" class="vacia">Las detecciones aparecerán aquí cuando pongas un objeto frente a la cámara.</p>
+  </section>
+
+  <section class="totales" aria-labelledby="tituloTotales">
+    <h2 id="tituloTotales"><span id="total" class="cifra-media">0</span> objetos analizados</h2>
+    <div class="reparto" aria-hidden="true">
+      <span id="barraBotellas" class="tramo tramo-plastico"></span>
+      <span id="barraResto" class="tramo tramo-resto"></span>
     </div>
+    <dl class="leyenda">
+      <div><dt><i class="muestra muestra-plastico"></i>Botellas</dt><dd id="botellas">0</dd></div>
+      <div><dt><i class="muestra muestra-resto"></i>Otros objetos</dt><dd id="noBotellas">0</dd></div>
+    </dl>
   </section>
 </main>
+
 <script src="/js/camara.js"></script>
