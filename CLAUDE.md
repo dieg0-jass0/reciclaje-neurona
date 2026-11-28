@@ -1,6 +1,6 @@
 # Reciclaje Neurona — Clasificador de botellas
 
-App web que usa la cámara del navegador para detectar si un objeto es una botella de plástico, con un modelo de IA, y guarda cada detección en MongoDB.
+App web para una recicladora: con la cámara del navegador y un modelo de IA detecta botellas de plástico, cuenta cada botella una sola vez por persona y le suma puntos. Cada botella contada se guarda en MongoDB.
 
 ## Arquitectura
 
@@ -16,6 +16,7 @@ Express  --Mongoose-->  MongoDB (modelo Mongoose "Deteccion")
 | `web/src/routes/` | `api.routes.js` (REST) y `view.routes.js` (dashboard) |
 | `web/src/controllers/` | Lógica HTTP: validar, llamar al servicio, responder |
 | `web/src/services/ia.service.js` | Único punto que habla con Flask (`IA_URL`) |
+| `web/src/services/conteo.service.js` | Decide cuándo una serie de frames es UNA botella nueva por persona (evita puntos repetidos) |
 | `web/src/models/deteccion.model.js` | Esquema + funciones `guardar`, `listar`, `resumen`; devuelve objetos planos con `id` |
 | `web/src/views/` | Plantillas Handlebars (`layouts/main.hbs`, `dashboard.hbs`) |
 | `web/src/public/` | `css/estilos.css` y `js/camara.js` (JS sin framework, sin build) |
@@ -33,7 +34,7 @@ pip install -r requirements.txt && python app.py
 cd web && cp .env.example .env && npm install && npm run dev
 ```
 
-Variables (`web/.env`): `PORT` (3000), `IA_URL` (http://127.0.0.1:5000), `MONGODB_URI`.
+Variables (`web/.env`): `PORT` (3000), `IA_URL` (http://127.0.0.1:5000), `MONGODB_URI`, y las del conteo (`PUNTOS_POR_BOTELLA`, `CONTEO_*`, ver `.env.example`).
 
 Comprobar que todo vive: `curl localhost:3000/api/estado` → `{"web":"ok","ia":"ok","db":"ok"}`.
 

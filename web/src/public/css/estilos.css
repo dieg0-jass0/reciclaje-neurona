@@ -107,9 +107,8 @@ select, .boton {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
   grid-template-areas:
-    "visor veredicto"
-    "cinta cinta"
-    "totales totales";
+    "visor lateral"
+    "cinta cinta";
   gap: 28px clamp(20px, 3vw, 40px);
   padding: 28px clamp(16px, 4vw, 48px) 48px;
   max-width: 1320px;
@@ -153,9 +152,13 @@ select, .boton {
   fill-opacity: .55;
   transition: y .6s cubic-bezier(.3, 1.3, .5, 1), fill .3s;
 }
-.visor[data-tipo="botella"] .nivel { fill: var(--amarillo); }
+.visor[data-tipo="botella"] .nivel,
+.visor[data-tipo="contada"] .nivel { fill: var(--amarillo); }
 .visor[data-tipo="botella"] .contorno,
-.visor[data-tipo="botella"] .tapa { stroke: var(--amarillo); stroke-dasharray: none; }
+.visor[data-tipo="botella"] .tapa,
+.visor[data-tipo="contada"] .contorno,
+.visor[data-tipo="contada"] .tapa { stroke: var(--amarillo); stroke-dasharray: none; }
+.visor[data-tipo="contada"] .nivel { fill-opacity: .8; }
 
 .pista {
   position: absolute;
@@ -167,14 +170,21 @@ select, .boton {
 }
 
 /* Veredicto: el letrero de la estación */
+.lateral {
+  grid-area: lateral;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 32px;
+}
+
 .veredicto {
-  grid-area: veredicto;
-  align-self: center;
   border-left: 14px solid var(--resto);
   padding: 8px 0 8px 24px;
   transition: border-color .3s;
 }
-.veredicto[data-tipo="botella"] { border-color: var(--amarillo); }
+.veredicto[data-tipo="botella"],
+.veredicto[data-tipo="contada"] { border-color: var(--amarillo); }
 .veredicto[data-tipo="error"] { border-color: var(--alerta); }
 .veredicto[data-tipo="espera"],
 .veredicto[data-tipo="pausa"] { border-color: var(--pet); }
@@ -233,8 +243,7 @@ select, .boton {
   color: var(--tinta-suave);
 }
 .ficha svg { width: 30px; height: 56px; }
-.ficha .forma { fill: var(--resto); }
-.ficha[data-tipo="botella"] .forma { fill: var(--amarillo); stroke: var(--tinta); stroke-width: 1.5; }
+.ficha .forma { fill: var(--amarillo); stroke: var(--tinta); stroke-width: 1.5; }
 .ficha strong { font-family: var(--display); font-size: 1.125rem; color: var(--tinta); line-height: 1; }
 
 .ficha.nueva { animation: entra .5s cubic-bezier(.3, 1.3, .5, 1); }
@@ -246,36 +255,45 @@ select, .boton {
 .vacia { margin-top: 12px; color: var(--tinta-suave); max-width: 60ch; }
 .vacia[hidden] { display: none; }
 
-/* Totales */
-.totales { grid-area: totales; }
-.totales h2 { font-weight: 400; display: flex; align-items: baseline; gap: 10px; }
-.cifra-media {
+/* Marcador de puntos */
+.marcador {
+  position: relative;
+  padding: 20px 24px;
+  background: var(--amarillo);
+  border-radius: 6px 6px 28px 6px;
+}
+.marcador-titulo { font-weight: 700; }
+.puntos {
   font-family: var(--display);
   font-weight: 800;
-  font-size: 2.5rem;
-  line-height: 1;
+  font-size: clamp(3.5rem, 7vw, 5.5rem);
+  line-height: .9;
   font-variant-numeric: tabular-nums;
+  transform-origin: left bottom;
 }
-
-.reparto {
-  display: flex;
-  height: 22px;
-  margin-top: 14px;
-  border-radius: 6px;
-  overflow: hidden;
-  background: var(--pet);
+.puntos.sube { animation: sube .7s cubic-bezier(.3, 1.5, .5, 1); }
+@keyframes sube {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.18); }
+  100% { transform: scale(1); }
 }
-.tramo { height: 100%; width: 0; transition: width .6s ease; }
-.tramo-plastico { background: var(--amarillo); }
-.tramo-resto { background: var(--resto); }
-
-.leyenda { display: flex; flex-wrap: wrap; gap: 8px 32px; margin-top: 12px; }
-.leyenda div { display: flex; gap: 8px; align-items: baseline; }
-.leyenda dt { display: flex; align-items: center; gap: 8px; color: var(--tinta-suave); }
-.leyenda dd { font-weight: 700; font-variant-numeric: tabular-nums; }
-.muestra { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
-.muestra-plastico { background: var(--amarillo); }
-.muestra-resto { background: var(--resto); }
+.suma {
+  position: absolute;
+  top: 18px; right: 24px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 2rem;
+  opacity: 0;
+}
+.suma.visible { animation: suma 1.6s ease-out; }
+@keyframes suma {
+  0% { opacity: 0; transform: translateY(12px); }
+  20% { opacity: 1; transform: none; }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+.marcador-detalle { margin-top: 8px; }
+.regla { margin-top: 12px; font-size: .875rem; max-width: 40ch; }
 
 .nota-sesion {
   grid-column: 1 / -1;
@@ -287,7 +305,7 @@ select, .boton {
 @media (max-width: 820px) {
   .estacion {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "visor" "veredicto" "cinta" "totales";
+    grid-template-areas: "visor" "lateral" "cinta";
   }
   .barra { gap: 12px 20px; }
   .marca { width: 100%; }
@@ -493,7 +511,7 @@ select, .boton {
 .tipo-acceso input:focus-visible + label { outline: 2px solid #1a7f45; }
 /* ===== Roles ===== */
 [hidden] { display: none !important; }
-.admin-stats { grid-template-columns: repeat(5, 1fr); }
+.admin-stats { grid-template-columns: repeat(4, 1fr); }
 .etiqueta-rol {
     display: inline-block;
     padding: 2px 8px;

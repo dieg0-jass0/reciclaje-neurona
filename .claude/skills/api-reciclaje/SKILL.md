@@ -7,32 +7,43 @@ description: Contrato REST de la web Express y flujo de datos cámara → Expres
 
 ## Flujo de una clasificación
 
-1. `camara.js` toma un frame del `<video>` cada `INTERVALO_MS` (1000 ms), lo reduce a ≤480 px de ancho y lo manda como JPEG (calidad 0.85). Si la petición anterior sigue en curso (`ocupado`), salta el frame.
-2. `POST /api/clasificar` → multer en memoria (máx. 3 MB, solo `image/*`) → `clasificacion.controller.clasificar`.
-3. El controlador llama a `ia.service.clasificarImagen(buffer, mimetype)` → Flask `/predict`.
-4. Guarda con `Deteccion.guardar({ esBotella, confianza })` y responde el registro.
-5. `camara.js` muestra el resultado y refresca `/api/resumen` y `/api/historial?limite=8`.
+1. `camara.js` toma un frame del `<video>` cada `INTERVALO_MS` (1000 ms), lo reduce a ≤480 px de ancho y lo manda como JPEG. Si la petición anterior sigue en curso (`ocupado`), salta el frame.
+2. `POST /api/clasificar` (requiere sesión) → multer en memoria (máx. 3 MB, solo `image/*`) → `clasificacion.controller.clasificar`.
+3. El controlador llama a `ia.service.clasificarImagen` → Flask `/predict`.
+4. `conteo.service.registrarFrame(usuarioId, resultado)` decide si el frame es una botella **nueva** de esa persona (semáforo en memoria, por usuario):
+   - `confirmando`: botella vista, faltan frames seguidos (`CONTEO_FRAMES_CONFIRMAR`).
+   - `contar`: botella nueva → se guarda UNA `Deteccion` con `puntos = PUNTOS_POR_BOTELLA`.
+   - `ya_contada`: la misma botella sigue frente a la cámara; no suma.
+   - `esperar`: aún no pasa `CONTEO_ESPERA_SEG` desde la última botella.
+   - `nada`: no hay botella (o seguridad < `CONTEO_CONFIANZA_MIN`). Tras `CONTEO_FRAMES_LIBERAR` frames así, se puede contar otra.
+5. Solo en `contar` se escribe en MongoDB. `camara.js` muestra el mensaje según `accion` y refresca `/api/resumen` y `/api/historial`.
+
+Límite: el modelo no distingue botellas individuales; retirar y volver a mostrar la misma botella cuenta como otra. El flujo correcto es depositarla tras el conteo. El estado vive en memoria: reiniciar el servidor lo reinicia (no borra puntos).
 
 ## Endpoints
 
 | Método y ruta | Respuesta OK | Errores |
 |---|---|---|
-| `POST /api/clasificar` (multipart `imagen`) | `{ id, esBotella, confianza, fecha }` | 400 sin imagen o no es imagen · 502 IA no respondió · 500 MongoDB |
-| `GET /api/historial?limite=N` | `[{ id, esBotella, confianza, fecha }]` más recientes primero (por defecto 20) | 500 |
-| `GET /api/resumen` | `{ total, botellas, noBotellas }` | 500 |
-| `GET /api/estado` | `{ web: "ok", ia: "ok"\|"caido", db: "ok"\|"caido" }` | — |
-| `GET /` | Dashboard HTML (Handlebars) | — |
+| `POST /api/clasificar` (multipart `imagen`) | `{ esBotella, confianza, accion, faltan?, esperaMs?, entrega? }`; `entrega = { id, esBotella, confianza, puntos, fecha }` solo si `accion = "contar"` | 400 · 401 · 502 · 500 |
+| `GET /api/historial?limite=N` | Botellas contadas de la persona con sesión: `[{ id, esBotella, confianza, puntos, fecha }]` (1–100, por defecto 20) | 401 · 500 |
+| `GET /api/resumen` | `{ botellas, puntos, puntosPorBotella }` de la persona con sesión | 401 · 500 |
+| `GET /api/estado` (pública) | `{ web: "ok", ia: "ok"\|"caido", db: "ok"\|"caido" }` | — |
+| `GET /` | Dashboard HTML (requiere sesión) | redirige a `/login` |
 
 Formato de error: `{ error: "mensaje para el usuario", detalle?: "err.message" }`.
+
+## Base de datos
+
+`Deteccion` = una botella reciclada: `{ esBotella: true, confianza, puntos, usuarioId, fecha }`. Los puntajes se calculan sumando `puntos` (no hay un campo de puntos en `Usuario`, así no se desincroniza). Los documentos antiguos (uno por frame, sin `puntos`) se ignoran con el filtro `ENTREGA = { esBotella: true, puntos: { $gt: 0 } }`.
 
 ## Quién consume cada campo
 
 | Campo | Lo produce | Lo usan |
 |---|---|---|
-| `esBotella`, `confianza` | Flask `app.py` | `deteccion.model.js` (esquema), `camara.js` (texto y color `.si`/`.no`) |
-| `id` | `aPlano()` en el modelo (`String(_id)`) | `camara.js` (últimos 4 caracteres en el historial) |
-| `fecha` | Mongoose (`default: Date.now`, con índice) | historial, orden |
-| `total/botellas/noBotellas` | `Deteccion.resumen()` | `#total`, `#botellas`, `#noBotellas` en `dashboard.hbs` |
+| `esBotella`, `confianza` | Flask `app.py` | `conteo.service.js`, `camara.js` |
+| `accion` | `conteo.service.js` | `camara.js` (mensaje del veredicto) |
+| `puntos` | controlador (`REGLAS.puntosPorBotella`) | marcador y cinta en `camara.js`, panel y PDF de admin |
+| `botellas/puntos` (resumen) | `Deteccion.resumenUsuario()` | `#puntos`, `#botellas` en `dashboard.hbs` |
 
 Renombrar un campo exige cambiar todas las columnas de su fila.
 
@@ -41,11 +52,11 @@ Renombrar un campo exige cambiar todas las columnas de su fila.
 1. Función en el modelo (`deteccion.model.js`) que devuelva objetos planos vía `aPlano` (nunca documentos Mongoose).
 2. Controlador `async (req, res)` con `try/catch` y el formato de error anterior.
 3. Ruta en `api.routes.js`.
-4. Validar y acotar parámetros de query (p. ej. `limite`: entero entre 1 y 100) — hoy `historial` acepta cualquier número.
+4. Validar y acotar parámetros de query (como `limite` en `historial`).
 5. Documentarlo en `README.md` y en la tabla de arriba.
 
 ## Cuidados conocidos
 
-- `camara.js` arma HTML con `innerHTML` usando `d.label` (nombre de la cámara) y datos de la API. Para texto externo preferir `textContent` / `createElement`.
-- La API no tiene autenticación ni límite de peticiones; cualquiera en la red puede llenar la BD.
+- Para texto externo en `camara.js`, usar `textContent` / `createElement`, nunca `innerHTML`.
+- La API requiere sesión pero no tiene límite de peticiones.
 - `ia.service.clasificarImagen` no tiene timeout: si Flask se cuelga, la petición espera indefinidamente (el navegador no enviará más frames por `ocupado`). Usar `AbortSignal.timeout(...)`.

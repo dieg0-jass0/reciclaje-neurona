@@ -16,9 +16,10 @@ const ALTO_BOTELLA = 294 - 22;
 let ocupado = false;
 let pausado = false;
 let ultimoId = null;
+let retenerHasta = 0;        // mantiene visible el aviso de "botella contada"
+const RETENER_MS = 2500;
 
 const FORMA_BOTELLA = 'M20 6h10v8c0 3 7 5 7 11v40c0 3-2 5-5 5H18c-3 0-5-2-5-5V25c0-6 7-8 7-11z';
-const FORMA_OTRO = 'M10 30c0-8 8-12 15-12s15 4 15 12v22c0 8-7 12-15 12s-15-4-15-12z';
 
 // ---------- Veredicto y botella guía ----------
 function mostrar(tipo, titular, porcentaje, destino) {
@@ -32,12 +33,42 @@ function mostrar(tipo, titular, porcentaje, destino) {
   nivel.setAttribute('y', FONDO_BOTELLA - lleno * ALTO_BOTELLA);
 }
 
-function mostrarResultado({ esBotella, confianza }) {
-  const pct = Math.round(confianza * 100);
-  if (esBotella) {
-    mostrar('botella', 'Botella de plástico', pct, 'Va al contenedor de plásticos.');
-  } else {
-    mostrar('otro', 'No es una botella', pct, 'Este objeto no va al contenedor de plásticos.');
+// La respuesta trae { esBotella, confianza, accion } (ver conteo.service.js)
+function mostrarResultado(d) {
+  const pct = Math.round(d.confianza * 100);
+
+  if (d.accion === 'contar') {
+    const puntos = d.entrega?.puntos ?? 0;
+    mostrar('contada', 'Botella contada', pct, `+${puntos} puntos. Deposítala en el contenedor de plásticos.`);
+    celebrar(puntos);
+    retenerHasta = Date.now() + RETENER_MS;
+    return;
+  }
+  if (Date.now() < retenerHasta) return;
+
+  switch (d.accion) {
+    case 'confirmando':
+      return mostrar('botella', 'Botella de plástico', pct, 'Mantenla quieta un momento para contarla.');
+    case 'ya_contada':
+      return mostrar('botella', 'Esta botella ya se contó', pct, 'Deposítala en el contenedor y muestra la siguiente.');
+    case 'esperar':
+      return mostrar('botella', 'Botella de plástico', pct, 'Espera un momento antes de mostrar la siguiente.');
+    default:
+      if (d.esBotella) {
+        return mostrar('otro', 'No se ve con claridad', pct, 'Acerca la botella o gírala para que la cámara la vea mejor.');
+      }
+      return mostrar('otro', 'No es una botella', pct, 'Este objeto no suma puntos ni va al contenedor de plásticos.');
+  }
+}
+
+function celebrar(puntos) {
+  const suma = $('sumaPuntos');
+  const marcador = $('puntos');
+  suma.textContent = `+${puntos}`;
+  for (const el of [suma, marcador]) {
+    el.classList.remove(el === suma ? 'visible' : 'sube');
+    void el.offsetWidth; // reinicia la animación
+    el.classList.add(el === suma ? 'visible' : 'sube');
   }
 }
 
@@ -65,7 +96,7 @@ async function iniciarCamara(deviceId) {
   video.srcObject = await navigator.mediaDevices.getUserMedia({
     video: { deviceId: { exact: deviceId } },
   });
-  mostrar('espera', 'Analizando…', null, 'Pon un objeto frente a la cámara.');
+  mostrar('espera', 'Analizando…', null, 'Muestra una botella a la cámara.');
 }
 
 async function analizarFrame() {
@@ -86,7 +117,7 @@ async function analizarFrame() {
     if (!resp.ok) throw new Error(datos.error || `El servidor respondió ${resp.status}`);
 
     if (!pausado) mostrarResultado(datos);
-    await actualizarPanel();
+    if (datos.accion === 'contar') await actualizarPanel();
   } catch (err) {
     mostrar('error', 'Sin resultado', null, err.message);
   } finally {
@@ -94,25 +125,22 @@ async function analizarFrame() {
   }
 }
 
-// ---------- Cinta y totales ----------
+// ---------- Cinta y puntaje ----------
 function crearFicha(h, esNueva) {
   const li = document.createElement('li');
   li.className = 'ficha' + (esNueva ? ' nueva' : '');
-  li.dataset.tipo = h.esBotella ? 'botella' : 'otro';
 
-  const pct = Math.round(h.confianza * 100);
   const hora = new Date(h.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
-  const tipo = h.esBotella ? 'Botella' : 'Otro objeto';
-  li.title = `${tipo}, ${pct}% de seguridad, ${hora}`;
+  li.setAttribute('aria-label', `Botella, ${h.puntos} puntos, ${hora}`);
+  li.title = li.getAttribute('aria-label');
 
-  li.innerHTML = `<svg viewBox="0 0 50 72" aria-hidden="true"><path class="forma" d="${h.esBotella ? FORMA_BOTELLA : FORMA_OTRO}"/></svg>`;
+  li.innerHTML = `<svg viewBox="0 0 50 72" aria-hidden="true"><path class="forma" d="${FORMA_BOTELLA}"/></svg>`;
 
   const fuerte = document.createElement('strong');
-  fuerte.textContent = `${pct}%`;
+  fuerte.textContent = `+${h.puntos}`;
   const tiempo = document.createElement('span');
   tiempo.textContent = hora;
   li.append(fuerte, tiempo);
-  li.setAttribute('aria-label', li.title);
   return li;
 }
 
@@ -122,12 +150,9 @@ async function actualizarPanel() {
     fetch('/api/historial?limite=14').then((r) => r.json()),
   ]);
 
-  $('total').textContent = res.total;
+  $('puntos').textContent = res.puntos;
   $('botellas').textContent = res.botellas;
-  $('noBotellas').textContent = res.noBotellas;
-  const porcion = res.total ? (res.botellas / res.total) * 100 : 0;
-  $('barraBotellas').style.width = `${porcion}%`;
-  $('barraResto').style.width = res.total ? `${100 - porcion}%` : '0%';
+  $('puntosPorBotella').textContent = res.puntosPorBotella;
 
   const nuevoId = hist[0]?.id ?? null;
   $('historial').replaceChildren(...hist.map((h, i) => crearFicha(h, i === 0 && ultimoId !== null && nuevoId !== ultimoId)));
@@ -156,8 +181,8 @@ btnPausa.addEventListener('click', () => {
   pausado = !pausado;
   btnPausa.setAttribute('aria-pressed', String(pausado));
   btnPausa.textContent = pausado ? 'Reanudar análisis' : 'Pausar análisis';
-  if (pausado) mostrar('pausa', 'En pausa', null, 'Pulsa «Reanudar análisis» para seguir clasificando.');
-  else mostrar('espera', 'Analizando…', null, 'Pon un objeto frente a la cámara.');
+  if (pausado) mostrar('pausa', 'En pausa', null, 'Pulsa «Reanudar análisis» para seguir contando botellas.');
+  else mostrar('espera', 'Analizando…', null, 'Muestra una botella a la cámara.');
 });
 
 actualizarEstado();

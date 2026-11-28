@@ -20,9 +20,8 @@
     <section class="admin-stats">
       <div class="dash-stat"><span>Usuarios</span><strong>{{totalUsuarios}}</strong></div>
       <div class="dash-stat"><span>Administradores</span><strong>{{totalAdmins}}</strong></div>
-      <div class="dash-stat"><span>Escaneos</span><strong>{{resumen.total}}</strong></div>
-      <div class="dash-stat si"><span>Botellas</span><strong>{{resumen.botellas}}</strong></div>
-      <div class="dash-stat no"><span>No botellas</span><strong>{{resumen.noBotellas}}</strong></div>
+      <div class="dash-stat si"><span>Botellas recicladas</span><strong>{{resumen.botellas}}</strong></div>
+      <div class="dash-stat"><span>Puntos entregados</span><strong>{{resumen.puntos}}</strong></div>
     </section>
 
     <section class="dash-tarjeta admin-carreras">
@@ -67,7 +66,8 @@
               <th>Correo</th>
               <th>Carrera</th>
               <th>Registro</th>
-              <th class="num">Escaneos</th>
+              <th class="num">Botellas</th>
+              <th class="num">Puntos</th>
               <th></th>
             </tr>
           </thead>
@@ -80,7 +80,8 @@
                 <td>{{correo}}</td>
                 <td>{{carrera}}</td>
                 <td>{{registro}}</td>
-                <td class="num">{{escaneos}}</td>
+                <td class="num">{{botellas}}</td>
+                <td class="num">{{puntos}}</td>
                 <td class="num">
                   {{#if soyYo}}
                     <span class="admin-tu">Tú</span>
@@ -93,7 +94,7 @@
                 </td>
               </tr>
             {{else}}
-              <tr><td colspan="8" class="admin-vacio">No hay usuarios que coincidan.</td></tr>
+              <tr><td colspan="9" class="admin-vacio">No hay usuarios que coincidan.</td></tr>
             {{/each}}
           </tbody>
         </table>

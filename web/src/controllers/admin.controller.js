@@ -20,8 +20,8 @@ async function usuariosConEscaneos(filtros) {
   return usuarios.map((u) => ({
     ...u,
     registro: fecha(u.creado),
-    escaneos: conteo[u.id]?.total || 0,
     botellas: conteo[u.id]?.botellas || 0,
+    puntos: conteo[u.id]?.puntos || 0,
   }));
 }
 
@@ -81,9 +81,10 @@ export async function pdfUsuarios(req, res, next) {
         { titulo: 'No. control', clave: 'numeroControl', ancho: 80 },
         { titulo: 'Nombre completo', clave: 'nombre', ancho: 160 },
         { titulo: 'Correo', clave: 'correo', ancho: 165 },
-        { titulo: 'Carrera', clave: 'carrera', ancho: 195 },
+        { titulo: 'Carrera', clave: 'carrera', ancho: 165 },
         { titulo: 'Registro', clave: 'registro', ancho: 65 },
-        { titulo: 'Escaneos', clave: 'escaneos', ancho: 55, alinear: 'derecha' },
+        { titulo: 'Botellas', clave: 'botellas', ancho: 45, alinear: 'derecha' },
+        { titulo: 'Puntos', clave: 'puntos', ancho: 40, alinear: 'derecha' },
       ],
       filas: usuarios,
     });
