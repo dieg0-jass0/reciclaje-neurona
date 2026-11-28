@@ -1,5 +1,18 @@
 <main class="contenedor">
-  <h1>Clasificador de botellas de plástico</h1>
+  <header class="barra">
+    <h1>Clasificador de botellas de plástico</h1>
+    <div class="usuario">
+      {{#if esAdmin}}<a href="/admin" class="dash-enlace">Administrador</a>{{/if}}
+      <span>Hola, <strong>{{usuario}}</strong></span>
+      <form method="post" action="/logout">
+        <button type="submit" class="boton secundario">Cerrar sesión</button>
+      </form>
+    </div>
+  </header>
+
+  <div id="avisoSesion" class="mensaje alerta" role="alert" hidden
+       data-inactividad-ms="{{inactividadMs}}"></div>
+  <p class="nota">La sesión se cierra tras {{textoInactividad}} sin actividad.</p>
 
   <section class="panel">
     <label for="camaras">Cámara:</label>
@@ -23,4 +36,5 @@
     </div>
   </section>
 </main>
+<script src="/js/sesion.js"></script>
 <script src="/js/camara.js"></script>
