@@ -303,6 +303,9 @@ select, .boton {
   text-decoration: none;
 }
 .boton.boton-reporte:hover { background: var(--tapon); border-color: var(--tapon); }
+.boton.boton-reporte:disabled { opacity: .6; cursor: progress; }
+.estado-constancia { margin-top: 8px; font-size: .875rem; font-weight: 700; }
+.estado-constancia[data-tipo="error"] { color: var(--alerta); }
 .regla { margin-top: 12px; font-size: .875rem; max-width: 40ch; }
 
 .nota-sesion {

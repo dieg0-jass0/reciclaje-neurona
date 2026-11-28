@@ -16,12 +16,10 @@ function leerFiltros(query) {
 }
 
 async function usuariosConEscaneos(filtros) {
-  const [usuarios, conteo] = await Promise.all([Usuario.listar(filtros), Deteccion.conteoPorUsuario()]);
+  const usuarios = await Usuario.listar(filtros);
   return usuarios.map((u) => ({
     ...u,
     registro: fecha(u.creado),
-    botellas: conteo[u.id]?.botellas || 0,
-    puntos: conteo[u.id]?.puntos || 0,
   }));
 }
 

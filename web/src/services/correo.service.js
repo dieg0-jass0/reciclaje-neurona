@@ -53,3 +53,29 @@ export async function enviarAvisoRegistro({ correo, nombre, numeroControl, carre
       '<p style="color:#777">Si no fuiste tú, ignora este mensaje.</p>',
   });
 }
+// Envía la constancia de reciclaje (PDF adjunto) al correo del usuario
+export async function enviarConstancia({ correo, nombre, numeroControl, botellas, puntos }, pdf) {
+  const t = await obtenerTransporte();
+  await t.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to: correo,
+    subject: 'Tu constancia de reciclaje',
+    text:
+      `Hola ${nombre}:\n\n` +
+      'Te enviamos tu constancia de reciclaje en PDF.\n\n' +
+      `Número de control: ${numeroControl}\n` +
+      `Botellas recicladas: ${botellas}\n` +
+      `Puntos acumulados: ${puntos}\n`,
+    html:
+      `<p>Hola <strong>${escaparHtml(nombre)}</strong>:</p>` +
+      '<p>Te enviamos tu constancia de reciclaje en PDF.</p>' +
+      `<p>Número de control: <strong>${escaparHtml(numeroControl)}</strong><br>` +
+      `Botellas recicladas: <strong>${botellas}</strong><br>` +
+      `Puntos acumulados: <strong>${puntos}</strong></p>`,
+    attachments: [{
+      filename: `constancia-reciclaje-${numeroControl}.pdf`,
+      content: pdf,
+      contentType: 'application/pdf',
+    }],
+  });
+}

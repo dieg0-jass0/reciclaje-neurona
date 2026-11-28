@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import * as ctrl from '../controllers/clasificacion.controller.js';
+import { enviarMiConstancia } from '../controllers/reporte.controller.js';
 import { requiereSesionApi } from '../middleware/auth.js';
 
 const upload = multer({
@@ -22,5 +23,6 @@ router.use(requiereSesionApi);
 router.post('/clasificar', upload.single('imagen'), ctrl.clasificar);
 router.get('/historial', ctrl.historial);
 router.get('/resumen', ctrl.resumen);
+router.post('/constancia', enviarMiConstancia);
 
 export default router;

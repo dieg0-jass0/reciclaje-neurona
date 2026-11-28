@@ -9,6 +9,8 @@ import viewRoutes from './routes/view.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import { cargarSesion } from './middleware/auth.js';
+import Usuario from './models/usuario.model.js';
+import Deteccion from './models/deteccion.model.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -38,6 +40,10 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 
 conectarDB()
+  .then(async () => {
+    const n = await Usuario.completarTotales(() => Deteccion.conteoPorUsuario());
+    if (n) console.log(`Totales de botellas y puntos calculados para ${n} usuario(s)`);
+  })
   .then(() => app.listen(PORT, () => console.log(`Web en http://localhost:${PORT}`)))
   .catch((err) => {
     console.error('No se pudo conectar a MongoDB:', err.message);

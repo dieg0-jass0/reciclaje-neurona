@@ -43,12 +43,12 @@ function botella(doc, x, y, alto, { relleno, borde, ancho = 2 }) {
   doc.restore();
 }
 
-function encabezado(doc, generado) {
+function encabezado(doc, generado, titulo = 'Reporte de reciclaje') {
   doc.rect(0, 0, ANCHO, 128).fill(C.tinta);
   doc.rect(0, 128, ANCHO, 8).fill(C.amarillo);
 
   doc.font('negrita').fontSize(11).fillColor(C.pet).text('Clasificador de botellas', M, 40);
-  doc.font('titulo').fontSize(42).fillColor('#FFFFFF').text('Reporte de reciclaje', M, 56);
+  doc.font('titulo').fontSize(42).fillColor('#FFFFFF').text(titulo, M, 56);
   doc.font('texto').fontSize(10).fillColor(C.pet)
     .text(`Generado el ${generado}`, M, 44, { width: UTIL, align: 'right' });
 
@@ -207,6 +207,71 @@ export function crearReportePdf({ usuario, resumen, dias, filas, generado }) {
       doc.font('texto').fontSize(8.5).fillColor(C.tintaSuave)
         .text(`${usuario.nombre}  |  Página ${i + 1} de ${count}`, M, ALTO - M + 12, { width: UTIL, align: 'right', lineBreak: false });
     }
+    doc.end();
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Constancia personal (la que se envía por correo al usuario): solo sus datos
+// y sus totales, en una hoja.
+
+function dato(doc, etiqueta, valor, x, y, ancho) {
+  doc.font('texto').fontSize(10.5).fillColor(C.tintaSuave).text(etiqueta, x, y, { width: ancho });
+  doc.font('negrita').fontSize(15).fillColor(C.tinta).text(valor || 'Sin registrar', x, y + 15, { width: ancho });
+}
+
+function bloqueTotal(doc, { x, y, ancho, alto, fondo, etiqueta, valor }) {
+  doc.roundedRect(x, y, ancho, alto, 10).fill(fondo);
+  doc.font('negrita').fontSize(12).fillColor(C.tinta).text(etiqueta, x + 22, y + 20);
+  doc.font('titulo').fontSize(78).fillColor(C.tinta).text(nf(valor), x + 20, y + 38, { lineBreak: false });
+}
+
+/**
+ * @param {{ nombre, numeroControl, carrera, botellas, puntos }} usuario
+ * @param {string} generado  fecha y hora legibles
+ * @returns {Promise<Buffer>}
+ */
+export function crearConstanciaPdf({ usuario, generado }) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({
+      size: 'LETTER',
+      margin: 0,
+      info: { Title: `Constancia de reciclaje - ${usuario.nombre}`, Author: 'Clasificador de botellas' },
+    });
+    const partes = [];
+    doc.on('data', (p) => partes.push(p));
+    doc.on('end', () => resolve(Buffer.concat(partes)));
+    doc.on('error', reject);
+
+    registrarFuentes(doc);
+    encabezado(doc, generado, 'Constancia de reciclaje');
+
+    // Datos de la persona
+    let y = 176;
+    doc.font('negrita').fontSize(13).fillColor(C.tinta).text('Datos del estudiante', M, y);
+    y += 26;
+    doc.roundedRect(M, y, UTIL, 132, 10).lineWidth(1.5).stroke(C.pet);
+    const col = (UTIL - 48) / 2;
+    dato(doc, 'Número de control', usuario.numeroControl, M + 24, y + 22, col);
+    dato(doc, 'Nombre', usuario.nombre, M + 24 + col + 24, y + 22, col);
+    dato(doc, 'Carrera', usuario.carrera, M + 24, y + 76, UTIL - 48);
+
+    // Totales
+    y += 168;
+    doc.font('negrita').fontSize(13).fillColor(C.tinta).text('Tu reciclaje', M, y);
+    y += 26;
+    const ancho = (UTIL - 20) / 2;
+    bloqueTotal(doc, { x: M, y, ancho, alto: 150, fondo: C.pet, etiqueta: 'Botellas recicladas', valor: usuario.botellas });
+    bloqueTotal(doc, { x: M + ancho + 20, y, ancho, alto: 150, fondo: C.amarillo, etiqueta: 'Puntos acumulados', valor: usuario.puntos });
+    botella(doc, M + ancho - 58, y + 26, 98, { borde: C.tinta, ancho: 2.5 });
+
+    // Nota
+    y += 190;
+    doc.font('texto').fontSize(10.5).fillColor(C.tintaSuave).text(
+      'Esta constancia refleja las botellas que la cámara del clasificador contó a tu nombre hasta la fecha de generación. ' +
+      'Cada botella se cuenta una sola vez.',
+      M, y, { width: UTIL * 0.8 }
+    );
     doc.end();
   });
 }

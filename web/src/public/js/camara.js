@@ -174,7 +174,31 @@ async function actualizarEstado() {
   }
 }
 
+// ---------- Constancia por correo ----------
+async function pedirConstancia() {
+  const boton = $('enviarConstancia');
+  const estado = $('estadoConstancia');
+  boton.disabled = true;
+  boton.textContent = 'Enviando…';
+  estado.hidden = true;
+  try {
+    const resp = await fetch('/api/constancia', { method: 'POST' });
+    const datos = await resp.json();
+    if (!resp.ok) throw new Error(datos.error || `El servidor respondió ${resp.status}`);
+    estado.dataset.tipo = 'ok';
+    estado.textContent = `Constancia enviada a ${datos.correo}.`;
+  } catch (err) {
+    estado.dataset.tipo = 'error';
+    estado.textContent = err.message;
+  } finally {
+    estado.hidden = false;
+    boton.disabled = false;
+    boton.textContent = 'Enviar mi constancia a mi correo';
+  }
+}
+
 // ---------- Eventos ----------
+$('enviarConstancia').addEventListener('click', pedirConstancia);
 selCam.addEventListener('change', () => iniciarCamara(selCam.value));
 
 btnPausa.addEventListener('click', () => {

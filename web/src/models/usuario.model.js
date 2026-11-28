@@ -23,6 +23,11 @@ const esquema = new mongoose.Schema(
       required: function () { return this.rol !== ROLES.ADMIN; },
     },
     passwordHash: { type: String, required: true },
+    // Totales de reciclaje. Se suman cada vez que la cámara cuenta una botella.
+    // botellas: nunca baja. puntos: saldo actual; el futuro sistema de canje
+    // de premios restará de aquí (el detalle de cada botella vive en Deteccion).
+    botellas: { type: Number, default: 0, min: 0 },
+    puntos: { type: Number, default: 0, min: 0 },
     creado: { type: Date, default: Date.now },
   },
   { versionKey: false }
@@ -43,6 +48,8 @@ const aPlano = (doc) => ({
   correo: doc.correo,
   rol: doc.rol || ROLES.USUARIO,
   carrera: doc.carrera || '',
+  botellas: doc.botellas || 0,
+  puntos: doc.puntos || 0,
   creado: doc.creado,
 });
 
@@ -109,6 +116,43 @@ export default {
     ]);
     const mapa = Object.fromEntries(filas.map((f) => [f._id, f.total]));
     return CARRERAS.map((nombre) => ({ nombre, total: mapa[nombre] || 0 }));
+  },
+
+  // Suma una botella y sus puntos de forma atómica; devuelve los totales nuevos
+  async sumarBotella(id, puntos) {
+    const doc = await Modelo.findByIdAndUpdate(
+      id,
+      { $inc: { botellas: 1, puntos } },
+      { new: true, projection: { botellas: 1, puntos: 1 } }
+    ).lean();
+    if (!doc) throw new Error('El usuario ya no existe');
+    return { botellas: doc.botellas, puntos: doc.puntos };
+  },
+
+  // Deshace sumarBotella si no se pudo guardar el detalle de la botella
+  async restarBotella(id, puntos) {
+    await Modelo.updateOne({ _id: id }, { $inc: { botellas: -1, puntos: -puntos } });
+  },
+
+  async totales(id) {
+    if (!mongoose.isValidObjectId(id)) return { botellas: 0, puntos: 0 };
+    const doc = await Modelo.findById(id, { botellas: 1, puntos: 1 }).lean();
+    return { botellas: doc?.botellas || 0, puntos: doc?.puntos || 0 };
+  },
+
+  // Migración única: a los usuarios creados antes de estos campos les calcula
+  // sus totales a partir de las botellas ya guardadas en Deteccion.
+  async completarTotales(conteoPorUsuario) {
+    const pendientes = await Modelo.find({ botellas: { $exists: false } }, { _id: 1 }).lean();
+    if (!pendientes.length) return 0;
+    const conteo = await conteoPorUsuario();
+    await Modelo.bulkWrite(pendientes.map(({ _id }) => ({
+      updateOne: {
+        filter: { _id },
+        update: { $set: { botellas: conteo[String(_id)]?.botellas || 0, puntos: conteo[String(_id)]?.puntos || 0 } },
+      },
+    })));
+    return pendientes.length;
   },
 
   async buscarPorId(id) {

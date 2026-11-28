@@ -52,16 +52,6 @@ export default {
     return { botellas: fila?.botellas || 0, puntos: fila?.puntos || 0 };
   },
 
-  // Puntaje de una persona
-  async resumenUsuario(usuarioId) {
-    if (!idValido(usuarioId)) return { botellas: 0, puntos: 0 };
-    const [fila] = await Modelo.aggregate([
-      { $match: { ...ENTREGA, usuarioId: new mongoose.Types.ObjectId(usuarioId) } },
-      { $group: { _id: null, botellas: { $sum: 1 }, puntos: { $sum: { $ifNull: ['$puntos', 0] } } } },
-    ]);
-    return { botellas: fila?.botellas || 0, puntos: fila?.puntos || 0 };
-  },
-
   // Botellas por día de una persona: [{ dia: 'AAAA-MM-DD', botellas }] (solo días con botellas)
   async porDia(usuarioId, desde, zona) {
     if (!idValido(usuarioId)) return [];

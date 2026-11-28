@@ -12,7 +12,7 @@ description: Contrato REST de la web Express y flujo de datos cámara → Expres
 3. El controlador llama a `ia.service.clasificarImagen` → Flask `/predict`.
 4. `conteo.service.registrarFrame(usuarioId, resultado)` decide si el frame es una botella **nueva** de esa persona (semáforo en memoria, por usuario):
    - `confirmando`: botella vista, faltan frames seguidos (`CONTEO_FRAMES_CONFIRMAR`).
-   - `contar`: botella nueva → se guarda UNA `Deteccion` con `puntos = PUNTOS_POR_BOTELLA`.
+   - `contar`: botella nueva → `Usuario.sumarBotella` (+1 botella, +puntos, atómico) y se guarda UNA `Deteccion` con `puntos = PUNTOS_POR_BOTELLA`.
    - `ya_contada`: la misma botella sigue frente a la cámara; no suma.
    - `esperar`: aún no pasa `CONTEO_ESPERA_SEG` desde la última botella.
    - `nada`: no hay botella (o seguridad < `CONTEO_CONFIANZA_MIN`). Tras `CONTEO_FRAMES_LIBERAR` frames así, se puede contar otra.
@@ -24,19 +24,21 @@ Límite: el modelo no distingue botellas individuales; retirar y volver a mostra
 
 | Método y ruta | Respuesta OK | Errores |
 |---|---|---|
-| `POST /api/clasificar` (multipart `imagen`) | `{ esBotella, confianza, accion, faltan?, esperaMs?, entrega? }`; `entrega = { id, esBotella, confianza, puntos, fecha }` solo si `accion = "contar"` | 400 · 401 · 502 · 500 |
+| `POST /api/clasificar` (multipart `imagen`) | `{ esBotella, confianza, accion, faltan?, esperaMs?, entrega?, totales? }`; `entrega = { id, esBotella, confianza, puntos, fecha }` y `totales = { botellas, puntos }` solo si `accion = "contar"` | 400 · 401 · 502 · 500 |
 | `GET /api/historial?limite=N` | Botellas contadas de la persona con sesión: `[{ id, esBotella, confianza, puntos, fecha }]` (1–100, por defecto 20) | 401 · 500 |
-| `GET /api/resumen` | `{ botellas, puntos, puntosPorBotella }` de la persona con sesión | 401 · 500 |
+| `GET /api/resumen` | `{ botellas, puntos, puntosPorBotella }` de la persona con sesión (leído de `Usuario`) | 401 · 500 |
+| `POST /api/constancia` | Genera la constancia PDF (número de control, nombre, carrera, botellas, puntos) y la envía al correo registrado: `{ enviado: true, correo }`. Máx. 1 por minuto | 401 · 404 · 429 · 502 |
 | `GET /api/estado` (pública) | `{ web: "ok", ia: "ok"\|"caido", db: "ok"\|"caido" }` | — |
 | `GET /` | Dashboard HTML (requiere sesión) | redirige a `/login` |
-| `GET /reporte.pdf` | PDF con puntos, botellas, gráfica de 14 días y últimas 200 botellas de la persona con sesión (`utils/reporte-pdf.js`, pdfkit) | redirige a `/login` |
-| `GET /admin/usuarios/:id/reporte.pdf` | El mismo reporte de cualquier usuario (solo admin) | 403 · 404 |
+| `GET /admin/usuarios/:id/reporte.pdf` | Reporte completo con estadísticas (gráfica de 14 días, últimas 200 botellas) de cualquier usuario; solo admin (`crearReportePdf`) | 403 · 404 |
 
 Formato de error: `{ error: "mensaje para el usuario", detalle?: "err.message" }`.
 
 ## Base de datos
 
-`Deteccion` = una botella reciclada: `{ esBotella: true, confianza, puntos, usuarioId, fecha }`. Los puntajes se calculan sumando `puntos` (no hay un campo de puntos en `Usuario`, así no se desincroniza). Los documentos antiguos (uno por frame, sin `puntos`) se ignoran con el filtro `ENTREGA = { esBotella: true, puntos: { $gt: 0 } }`.
+- `Usuario.botellas` y `Usuario.puntos`: totales acumulados, se incrementan con `$inc` al contar cada botella. `puntos` es el **saldo**: el futuro sistema de canje de premios (pendiente, no implementado) restará de ahí; `botellas` nunca baja.
+- `Deteccion` = detalle de cada botella: `{ esBotella: true, confianza, puntos, usuarioId, fecha }`. Lo usan el historial del tablero y el reporte del administrador. Los documentos antiguos (uno por frame, sin `puntos`) se ignoran con `ENTREGA = { esBotella: true, puntos: { $gt: 0 } }`.
+- Migración: al arrancar, `Usuario.completarTotales` rellena `botellas`/`puntos` de los usuarios que no tienen esos campos, sumando sus `Deteccion`. Solo toca usuarios sin el campo, así que se puede ejecutar siempre.
 
 ## Quién consume cada campo
 
@@ -45,7 +47,7 @@ Formato de error: `{ error: "mensaje para el usuario", detalle?: "err.message" }
 | `esBotella`, `confianza` | Flask `app.py` | `conteo.service.js`, `camara.js` |
 | `accion` | `conteo.service.js` | `camara.js` (mensaje del veredicto) |
 | `puntos` | controlador (`REGLAS.puntosPorBotella`) | marcador y cinta en `camara.js`, panel y PDF de admin |
-| `botellas/puntos` (resumen) | `Deteccion.resumenUsuario()` | `#puntos`, `#botellas` en `dashboard.hbs` |
+| `botellas/puntos` (resumen) | `Usuario.totales()` | `#puntos`, `#botellas` en `dashboard.hbs`, constancia PDF |
 
 Renombrar un campo exige cambiar todas las columnas de su fila.
 
